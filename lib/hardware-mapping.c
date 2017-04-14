@@ -215,7 +215,7 @@ struct HardwareMapping matrix_hardware_mappings[] = {
 
   /*
    * pmo2017
-   * 2 chains on rev-b raspi with p5 header
+   * 2 chains on rev-b raspi with p5 header and PmO adapter board
    */
   {
     .name          = "pmo2017",
@@ -223,6 +223,41 @@ struct HardwareMapping matrix_hardware_mappings[] = {
     .output_enable = GPIO_BIT(18),
     .clock         = GPIO_BIT(29),// ok
     .strobe        = GPIO_BIT(31),// ok
+
+    /* Address lines */
+    .a             = GPIO_BIT(9), // ok
+    .b             = GPIO_BIT(8), // ok
+    .c             = GPIO_BIT(11),// ok
+    .d             = GPIO_BIT(7), // ok
+
+    /* Parallel chain 0 */
+    .p0_r1         = GPIO_BIT(3), // ok
+    .p0_g1         = GPIO_BIT(2), // ok
+    .p0_b1         = GPIO_BIT(14),// ok
+    .p0_r2         = GPIO_BIT(15),// ok
+    .p0_g2         = GPIO_BIT(4), // ok
+    .p0_b2         = GPIO_BIT(17),// ok
+
+    /* Parallel chain 1 */
+    .p1_r1         = GPIO_BIT(23),// ok
+    .p1_g1         = GPIO_BIT(27),// ok
+    .p1_b1         = GPIO_BIT(22),// ok
+    .p1_r2         = GPIO_BIT(10),// ok
+    .p1_g2         = GPIO_BIT(24),// ok
+    .p1_b2         = GPIO_BIT(25),// ok
+
+  },
+
+  /*
+   * pmo2017v2
+   * 2 chains with PmO adapter board for RPi with 40 GPIO pins  A+/B+/Pi2,3
+   */
+  {
+    .name          = "pmo2017v2",
+
+    .output_enable = GPIO_BIT(18),
+    .clock         = GPIO_BIT(12),// ok
+    .strobe        = GPIO_BIT(6),// ok
 
     /* Address lines */
     .a             = GPIO_BIT(9), // ok
