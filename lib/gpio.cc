@@ -90,7 +90,9 @@ namespace rgb_matrix {
    (1 << 22) | (1 << 23) | (1 << 24) | (1 << 25)| (1 << 27) |
    // support for A+/B+ and RPi2 with additional GPIO pins.
    (1 <<  5) | (1 <<  6) | (1 << 12) | (1 << 13) | (1 << 16) |
-   (1 << 19) | (1 << 20) | (1 << 21) | (1 << 26)
+   (1 << 19) | (1 << 20) | (1 << 21) | (1 << 26) |
+   // for P5 header
+   (1 << 29) | (1 << 31)
 );
 
 GPIO::GPIO() : output_bits_(0), slowdown_(1), gpio_port_(NULL) {
@@ -110,12 +112,12 @@ uint32_t GPIO::InitOutputs(uint32_t outputs) {
   // can switch between the two modes without trouble.
   // (TODO: this really only needs to be done in the Adafruit HAT case, so
   // we should exclude the other cases).
-  INP_GPIO(4);
-  INP_GPIO(18);
+  // INP_GPIO(4);
+  // INP_GPIO(18);
 
   outputs &= kValidBits;   // Sanitize input.
   output_bits_ = outputs;
-  for (uint32_t b = 0; b <= 27; ++b) {
+  for (uint32_t b = 0; b <= 31; ++b) {
     if (outputs & (1 << b)) {
       INP_GPIO(b);   // for writing, we first need to set as input.
       OUT_GPIO(b);
