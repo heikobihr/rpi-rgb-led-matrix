@@ -34,6 +34,14 @@ HARDWARE_DESC?=pmo2017
 # (So be prepared for these to be removed at some point)
 ###
 
+#
+# Some optimizations for SN PmO 2014 hardware mappings
+# This mapping has only 2 chains and does not use .e address
+# line. By defining HWMAP_SN_PMO_2017 some if conditions don't
+# get compiled into the code
+#
+DEFINES+=-DHWMAP_SN_PMO_2017
+
 # If you see that your display is inverse, you might have a matrix variant
 # has uses inverse logic for the RGB bits. In that case: uncomment this.
 # Flag: --led-inverse

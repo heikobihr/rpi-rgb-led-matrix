@@ -164,15 +164,21 @@ Framebuffer::~Framebuffer() {
   all_used_bits |= h.output_enable | h.clock | h.strobe;
 
   all_used_bits |= h.p0_r1 | h.p0_g1 | h.p0_b1 | h.p0_r2 | h.p0_g2 | h.p0_b2;
+#ifndef HWMAP_SN_PMO_2017
   if (parallel >= 2) {
+#endif // HWMAP_SN_PMO_2017
     all_used_bits |= h.p1_r1 | h.p1_g1 | h.p1_b1 | h.p1_r2 | h.p1_g2 | h.p1_b2;
+#ifndef HWMAP_SN_PMO_2017
   }
   if (parallel >= 3) {
     all_used_bits |= h.p2_r1 | h.p2_g1 | h.p2_b1 | h.p2_r2 | h.p2_g2 | h.p2_b2;
   }
+#endif // HWMAP_SN_PMO_2017
 
   const int double_rows = rows / 2;
+#ifndef HWMAP_SN_PMO_2017
   if (double_rows >= 32) all_used_bits |= h.e;
+#endif // HWMAP_SN_PMO_2017
   if (double_rows >= 16) all_used_bits |= h.d;
   if (double_rows >=  8) all_used_bits |= h.c;
   if (double_rows >=  4) all_used_bits |= h.b;
@@ -357,6 +363,7 @@ void Framebuffer::InitDefaultDesignator(int x, int y, PixelDesignator *d) {
       d->b_bit = h.p1_b2;
     }
   }
+#ifndef HWMAP_SN_PMO_2017
   else {
     if (y - 2*rows_ < double_rows_) {
       d->r_bit = h.p2_r1;
@@ -368,7 +375,7 @@ void Framebuffer::InitDefaultDesignator(int x, int y, PixelDesignator *d) {
       d->b_bit = h.p2_b2;
     }
   }
-
+#endif // HWMAP_SN_PMO_2017
   d->mask = ~(d->r_bit | d->g_bit | d->b_bit);
 }
 
@@ -376,16 +383,25 @@ void Framebuffer::DumpToMatrix(GPIO *io) {
   const struct HardwareMapping &h = *hardware_mapping_;
   gpio_bits_t color_clk_mask = 0;  // Mask of bits while clocking in.
   color_clk_mask |= h.p0_r1 | h.p0_g1 | h.p0_b1 | h.p0_r2 | h.p0_g2 | h.p0_b2;
+#ifndef HWMAP_SN_PMO_2017
   if (parallel_ >= 2) {
+#endif // HWMAP_SN_PMO_2017
     color_clk_mask |= h.p1_r1 | h.p1_g1 | h.p1_b1 | h.p1_r2 | h.p1_g2 | h.p1_b2;
+#ifndef HWMAP_SN_PMO_2017
   }
   if (parallel_ >= 3) {
     color_clk_mask |= h.p2_r1 | h.p2_g1 | h.p2_b1 | h.p2_r2 | h.p2_g2 | h.p2_b2;
   }
+#endif // HWMAP_SN_PMO_2017
 
   color_clk_mask |= h.clock;
 
-  const gpio_bits_t row_mask = h.a | h.b | h.c | h.d | h.e;
+  const gpio_bits_t row_mask = h.a | h.b | h.c | h.d
+#ifdef HWMAP_SN_PMO_2017
+		  ;
+#else // HWMAP_SN_PMO_2017
+		  | h.e;
+#endif // HWMAP_SN_PMO_2017
 
   gpio_bits_t row_address;
 
@@ -415,7 +431,9 @@ void Framebuffer::DumpToMatrix(GPIO *io) {
     row_address |= (d_row & 0x02) ? h.b : 0;
     row_address |= (d_row & 0x04) ? h.c : 0;
     row_address |= (d_row & 0x08) ? h.d : 0;
+#ifndef HWMAP_SN_PMO_2017
     row_address |= (d_row & 0x10) ? h.e : 0;
+#endif // HWMAP_SN_PMO_2017
 
     // Rows can't be switched very quickly without ghosting, so we do the
     // full PWM of one row before switching rows.
