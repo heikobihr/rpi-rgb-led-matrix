@@ -1,6 +1,5 @@
 CXXFLAGS=-Wall -O3 -g
-OBJECTS=led-image-viewer.o
-BINARIES=led-image-viewer
+BINARIES=led-image-viewer led-scrolling-image-viewer
 
 # Where our library resides. You mostly only need to change the
 # RGB_LIB_DISTRIBUTION, this is where the library is checked out.
@@ -23,14 +22,14 @@ $(RGB_LIBRARY): FORCE
 led-image-viewer: led-image-viewer.o $(RGB_LIBRARY)
 	$(CXX) $(CXXFLAGS) led-image-viewer.o -o $@ $(LDFLAGS) $(MAGICK_LDFLAGS)
 
-%.o : %.cc
-	$(CXX) -I$(RGB_INCDIR) $(CXXFLAGS) -c -o $@ $<
+led-scrolling-image-viewer: led-scrolling-image-viewer.o $(RGB_LIBRARY)
+	$(CXX) $(CXXFLAGS) led-scrolling-image-viewer.o -o $@ $(LDFLAGS) $(MAGICK_LDFLAGS)
 
-led-image-viewer.o : led-image-viewer.cc
+%.o : %.cc
 	$(CXX) -I$(RGB_INCDIR) $(CXXFLAGS) $(MAGICK_CXXFLAGS) -c -o $@ $<
 
 clean:
-	rm -f $(OBJECTS) $(BINARIES)
+	rm -f *.o $(BINARIES)
 
 FORCE:
 .PHONY: FORCE
