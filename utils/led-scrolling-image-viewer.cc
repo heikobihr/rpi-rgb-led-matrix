@@ -169,13 +169,15 @@ public:
 
       if (scroll_jumps_ < 0) {
         if (scroll_position_ < 0) {
-          scroll_position_ = *image_size_units - *offscreen_size_units;
+          scroll_position_ = *image_size_units;
           if (scroll_position_ < 0) scroll_position_ = *image_size_units;
           loop_count_--;
           if (loop_count_ < 0) loop_count_ = -1;
         }
       } else {
-        if (scroll_position_ > *image_size_units) {
+        int32_t scroll_position_limit = *image_size_units;
+        if (loop_count_ == 1) scroll_position_limit -= *offscreen_size_units;
+        if (scroll_position_ > scroll_position_limit) {
           scroll_position_ = 0;
           loop_count_--;
           if (loop_count_ < 0) loop_count_ = -1;
