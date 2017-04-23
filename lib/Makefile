@@ -24,7 +24,7 @@ TARGET=librgbmatrix
 #   classic            # (deprecated) Classic Pi1/2/. Not used anymore.
 #   classic-pi1        # (deprecated) Classic pinout on Rasperry Pi 1
 #   pmo2017            # secunet pmo2017 mapping rpi1 rev b 2 chains
-HARDWARE_DESC?=pmo2017
+HARDWARE_DESC?=pmo2017v2
 
 ###
 # After you change any of the following DEFINES, make sure to 'make' again.
