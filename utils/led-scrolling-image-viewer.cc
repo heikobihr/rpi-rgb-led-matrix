@@ -50,7 +50,7 @@ public:
     : ThreadedCanvasManipulator(m), scroll_jumps_(scroll_jumps),
       scroll_ms_(scroll_ms),
       scroll_vertical_(scroll_vertical),
-      horizontal_position_(0),
+      scroll_position_(0),
       matrix_(m) {
     offscreen_ = matrix_->CreateFrameCanvas();
   }
@@ -95,17 +95,17 @@ public:
 
     if (scroll_vertical_) {
       if (scroll_jumps_ < 0) {
-        horizontal_position_ = img.rows() - matrix_->height();
-        if (horizontal_position_ < 0) horizontal_position_ = img.rows();
+        scroll_position_ = img.rows() - matrix_->height();
+        if (scroll_position_ < 0) scroll_position_ = img.rows();
       } else {
-        horizontal_position_ = 0;
+        scroll_position_ = 0;
       }
     } else {
       if (scroll_jumps_ < 0) {
-        horizontal_position_ = img.columns() - matrix_->width();
-        if (horizontal_position_ < 0) horizontal_position_ = img.columns();
+        scroll_position_ = img.columns() - matrix_->width();
+        if (scroll_position_ < 0) scroll_position_ = img.columns();
       } else {
-        horizontal_position_ = 0;
+        scroll_position_ = 0;
       }
     }
 
@@ -135,11 +135,9 @@ public:
         continue;
       }
 
-printf("pos %d\n", horizontal_position_);
-
       if (scroll_vertical_) {
         for (int y = 0; y < screen_height; ++y) {
-          int ysrc = (horizontal_position_ + y) % current_image_.height;
+          int ysrc = (scroll_position_ + y) % current_image_.height;
           for (int x = 0; x < screen_width; ++x) {
             const Pixel &p = current_image_.getPixel(x, ysrc);
             offscreen_->SetPixel(x, y, p.red, p.green, p.blue);
@@ -147,7 +145,7 @@ printf("pos %d\n", horizontal_position_);
         }
       } else {
         for (int x = 0; x < screen_width; ++x) {
-          int xsrc = (horizontal_position_ + x) % current_image_.width;
+          int xsrc = (scroll_position_ + x) % current_image_.width;
           for (int y = 0; y < screen_height; ++y) {
             const Pixel &p = current_image_.getPixel(xsrc, y);
             offscreen_->SetPixel(x, y, p.red, p.green, p.blue);
@@ -155,16 +153,16 @@ printf("pos %d\n", horizontal_position_);
         }
       }
       offscreen_ = matrix_->SwapOnVSync(offscreen_);
-      horizontal_position_ += scroll_jumps_;
+      scroll_position_ += scroll_jumps_;
 
       if (scroll_vertical_) {
-        if (horizontal_position_ < 0) horizontal_position_ = current_image_.height - matrix_->height();
-        if (horizontal_position_ < 0) horizontal_position_ = current_image_.height;
-        if (horizontal_position_ > current_image_.height) horizontal_position_ = 0;
+        if (scroll_position_ < 0) scroll_position_ = current_image_.height - matrix_->height();
+        if (scroll_position_ < 0) scroll_position_ = current_image_.height;
+        if (scroll_position_ > current_image_.height) scroll_position_ = 0;
       } else {
-        if (horizontal_position_ < 0) horizontal_position_ = current_image_.width - matrix_->width();
-        if (horizontal_position_ < 0) horizontal_position_ = current_image_.width;
-        if (horizontal_position_ > current_image_.width) horizontal_position_ = 0;
+        if (scroll_position_ < 0) scroll_position_ = current_image_.width - matrix_->width();
+        if (scroll_position_ < 0) scroll_position_ = current_image_.width;
+        if (scroll_position_ > current_image_.width) scroll_position_ = 0;
       }
 
       if (scroll_ms_ <= 0) {
@@ -221,7 +219,7 @@ private:
   Mutex mutex_new_image_;
   Image new_image_;
 
-  int32_t horizontal_position_;
+  int32_t scroll_position_;
 
   RGBMatrix* matrix_;
   FrameCanvas* offscreen_;
@@ -239,7 +237,8 @@ static int usage(const char *progname) {
           "Allowed: 0, 90, 180, 270. Default: 0.\n"
           "\t-m <scoll_msecs>          : Pause between two scroll steps in msec.\n"
           "\t-j <scroll jumps>         : Pixels to shift at each scroll step (-x ... +x).\n"
-          "\t-t <seconds>              : Run for these number of seconds, then exit.\n");
+          "\t-t <seconds>              : Run for these number of seconds, then exit.\n"
+          "\t-v                        : Scroll vertically instead of horizontal.\n");
 
 
   rgb_matrix::PrintMatrixFlags(stderr);
@@ -336,6 +335,10 @@ int main(int argc, char *argv[]) {
 
   if (optind < argc) {
     image_filename = argv[optind];
+  }
+
+  if (!image_filename) {
+    return usage(argv[0]);
   }
 
   if (rotation % 90 != 0) {
