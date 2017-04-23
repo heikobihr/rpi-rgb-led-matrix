@@ -46,11 +46,12 @@ class ImageScroller : public ThreadedCanvasManipulator {
 public:
   // Scroll image with "scroll_jumps" pixels every "scroll_ms" milliseconds.
   // If "scroll_ms" is negative, don't do any scrolling.
-  ImageScroller(RGBMatrix *m, int scroll_jumps, int scroll_ms = 30, bool scroll_vertical = false)
+  ImageScroller(RGBMatrix *m, int scroll_jumps, int scroll_ms = 30, bool scroll_vertical = false, int loop_count = 0)
     : ThreadedCanvasManipulator(m), scroll_jumps_(scroll_jumps),
       scroll_ms_(scroll_ms),
       scroll_vertical_(scroll_vertical),
       scroll_position_(0),
+      loop_count_(loop_count),
       matrix_(m) {
     offscreen_ = matrix_->CreateFrameCanvas();
   }
@@ -121,7 +122,7 @@ public:
   void Run() {
     const int screen_height = offscreen_->height();
     const int screen_width = offscreen_->width();
-    while (running() && !interrupt_received) {
+    while (running() && !interrupt_received && (loop_count_ != 0)) {
       {
         MutexLock l(&mutex_new_image_);
         if (new_image_.IsValid()) {
@@ -155,14 +156,30 @@ public:
       offscreen_ = matrix_->SwapOnVSync(offscreen_);
       scroll_position_ += scroll_jumps_;
 
+      const int *image_size_units = NULL;
+      const int *offscreen_size_units = NULL;
+
       if (scroll_vertical_) {
-        if (scroll_position_ < 0) scroll_position_ = current_image_.height - matrix_->height();
-        if (scroll_position_ < 0) scroll_position_ = current_image_.height;
-        if (scroll_position_ > current_image_.height) scroll_position_ = 0;
+        image_size_units = &(current_image_.height);
+        offscreen_size_units = &(screen_height);
       } else {
-        if (scroll_position_ < 0) scroll_position_ = current_image_.width - matrix_->width();
-        if (scroll_position_ < 0) scroll_position_ = current_image_.width;
-        if (scroll_position_ > current_image_.width) scroll_position_ = 0;
+        image_size_units = &(current_image_.width);
+        offscreen_size_units = &(screen_width);
+      }
+
+      if (scroll_jumps_ < 0) {
+        if (scroll_position_ < 0) {
+          scroll_position_ = *image_size_units - *offscreen_size_units;
+          if (scroll_position_ < 0) scroll_position_ = *image_size_units;
+          loop_count_--;
+          if (loop_count_ < 0) loop_count_ = -1;
+        }
+      } else {
+        if (scroll_position_ > *image_size_units) {
+          scroll_position_ = 0;
+          loop_count_--;
+          if (loop_count_ < 0) loop_count_ = -1;
+        }
       }
 
       if (scroll_ms_ <= 0) {
@@ -220,6 +237,7 @@ private:
   Image new_image_;
 
   int32_t scroll_position_;
+  int loop_count_; // < 0: loop forever, otherwise loops to run
 
   RGBMatrix* matrix_;
   FrameCanvas* offscreen_;
@@ -235,8 +253,9 @@ static int usage(const char *progname) {
           "\t                            in the middle in an U-arrangement to get more vertical space.\n"
           "\t-R <rotation>             : Sets the rotation of matrix. "
           "Allowed: 0, 90, 180, 270. Default: 0.\n"
+          "\t-l<loop-count>            : Number of scroll loops (default -1=forever).\n"
           "\t-m <scoll_msecs>          : Pause between two scroll steps in msec.\n"
-          "\t-j <scroll jumps>         : Pixels to shift at each scroll step (-x ... +x).\n"
+          "\t-j <scroll jumps>         : Pixels to shift at each scroll step (-x ... -1, 1 ... x).\n"
           "\t-t <seconds>              : Run for these number of seconds, then exit.\n"
           "\t-v                        : Scroll vertically instead of horizontal.\n");
 
@@ -250,6 +269,7 @@ int main(int argc, char *argv[]) {
   int runtime_seconds = -1;
   int scroll_ms = 30;
   int scroll_jumps = 1;
+  int scoll_loops = -1;
   int rotation = 0;
   bool large_display = false;
   bool scroll_vertical = false;
@@ -272,7 +292,7 @@ int main(int argc, char *argv[]) {
   }
 
   int opt;
-  while ((opt = getopt(argc, argv, "dt:r:P:c:p:b:m:LR:j:v")) != -1) {
+  while ((opt = getopt(argc, argv, "dt:r:P:c:p:b:l:m:LR:j:v")) != -1) {
     switch (opt) {
     case 't':
       runtime_seconds = atoi(optarg);
@@ -280,6 +300,10 @@ int main(int argc, char *argv[]) {
 
     case 'm':
       scroll_ms = atoi(optarg);
+      break;
+
+    case 'l':
+      scoll_loops = atoi(optarg);
       break;
 
     case 'R':
@@ -370,7 +394,7 @@ int main(int argc, char *argv[]) {
   // The ThreadedCanvasManipulator objects are filling
   // the matrix continuously.
   ThreadedCanvasManipulator *image_gen = NULL;
-  ImageScroller *scroller = new ImageScroller(matrix, scroll_jumps, scroll_ms, scroll_vertical);
+  ImageScroller *scroller = new ImageScroller(matrix, scroll_jumps, scroll_ms, scroll_vertical, scoll_loops);
   if (!scroller->LoadImage(image_filename))
     return 1;
   image_gen = scroller;
@@ -392,9 +416,7 @@ int main(int argc, char *argv[]) {
   } else {
     // The
     printf("Press <CTRL-C> to exit and reset LEDs\n");
-    while (!interrupt_received) {
-      sleep(1); // Time doesn't really matter. The syscall will be interrupted.
-    }
+    image_gen->WaitStopped();
   }
 
   // Stop image generating thread. The delete triggers
