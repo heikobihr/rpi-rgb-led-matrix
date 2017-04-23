@@ -129,6 +129,7 @@ static bool LoadImageAndScale(const char *filename,
         result->push_back(frames[0]);   // just a single still image.
     }
 
+    bool needScaling = false;
     const int img_width = (*result)[0].columns();
     const int img_height = (*result)[0].rows();
     const float width_fraction = (float)target_width / img_width;
@@ -141,20 +142,32 @@ static bool LoadImageAndScale(const char *filename,
             : height_fraction;
         target_width = (int) roundf(larger_fraction * img_width);
         target_height = (int) roundf(larger_fraction * img_height);
+
+        needScaling = (img_width != target_width) || (img_height != target_height);
     }
     else if (fill_height) {
-        // Horizontal scrolling: Make things fit in vertical space.
-        // While the height constraint stays the same, we can expand to full
-        // width as we scroll along that axis.
-        target_width = (int) roundf(height_fraction * img_width);
+      // Horizontal scrolling: Make things fit in vertical space.
+      // While the height constraint stays the same, we can expand to full
+      // width as we scroll along that axis.
+      target_width = (int) roundf(height_fraction * img_width);
+
+      needScaling = (img_width != target_width);
     }
     else if (fill_width) {
-        // dito, vertical. Make things fit in horizontal space.
-        target_height = (int) roundf(width_fraction * img_height);
+      // dito, vertical. Make things fit in horizontal space.
+      target_height = (int) roundf(width_fraction * img_height);
+
+      needScaling = (img_height != target_height);
+    }
+    else
+    {
+      needScaling = (img_width != target_width) || (img_height != target_height);
     }
 
-    for (size_t i = 0; i < result->size(); ++i) {
+    if (needScaling) {
+      for (size_t i = 0; i < result->size(); ++i) {
         (*result)[i].scale(Magick::Geometry(target_width, target_height));
+      }
     }
 
     return true;
